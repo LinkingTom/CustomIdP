@@ -126,7 +126,76 @@ Key environment variables (see `config.env.template`):
 
 ## API Endpoints
 
+### Core Endpoints
 - `GET /`: Root endpoint with API information
 - `GET /health`: Health check endpoint
 - `GET /docs`: Swagger UI documentation
-- `GET /redoc`: ReDoc documentation 
+- `GET /redoc`: ReDoc documentation
+
+### User Endpoints
+- `POST /users`: Create a new user
+- `GET /users`: List all users (with pagination)
+- `GET /users/{email}`: Get a user by email (case-insensitive)
+- `PUT /users/{email}`: Replace a user completely
+- `PATCH /users/{email}`: Update specific user fields
+- `DELETE /users/{email}`: Delete a user
+
+### Team Endpoints (Optional)
+- `POST /teams`: Create a new team
+- `GET /teams`: List all teams (with pagination)
+- `GET /teams/{team_id}`: Get a team by ID
+- `PUT /teams/{team_id}`: Replace a team completely
+- `DELETE /teams/{team_id}`: Delete a team
+
+### Features
+- ✅ **Email normalization**: All emails automatically converted to lowercase
+- ✅ **Case-insensitive lookups**: Find users by email regardless of case
+- ✅ **Unique email enforcement**: Database-level uniqueness with `LOWER(email)` index
+- ✅ **Input validation**: Pydantic schemas with proper email validation
+- ✅ **Error handling**: Comprehensive HTTP error responses
+- ✅ **Pagination**: Support for `skip` and `limit` parameters
+- ✅ **JSON arrays**: Roles and teams stored as JSON arrays
+
+## Testing the API
+
+### Using the Demo Script
+```bash
+# Start the server
+python main.py
+
+# In another terminal, run the demo
+python demo_api.py
+```
+
+### Manual Testing Examples
+```bash
+# Create a user
+curl -X POST "http://localhost:8000/users" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "email": "john.DOE@example.com",
+       "name": "John Doe",
+       "roles": ["admin", "user"],
+       "teams": ["engineering"]
+     }'
+
+# Get user (case-insensitive)
+curl "http://localhost:8000/users/JOHN.DOE@EXAMPLE.COM"
+
+# Update user roles
+curl -X PATCH "http://localhost:8000/users/john.doe@example.com" \
+     -H "Content-Type: application/json" \
+     -d '{"roles": ["admin", "super-user"]}'
+
+# List all users
+curl "http://localhost:8000/users"
+
+# Create a team
+curl -X POST "http://localhost:8000/teams" \
+     -H "Content-Type: application/json" \
+     -d '{
+       "name": "Engineering",
+       "description": "Software development team",
+       "user_emails": ["john.doe@example.com"]
+     }'
+``` 
