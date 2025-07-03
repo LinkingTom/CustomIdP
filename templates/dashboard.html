@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Lightweight IDP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="bi bi-speedometer2"></i> Dashboard
+        </h1>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-6">
+        <div class="card bg-primary text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-people"></i> Users
+                </h5>
+                <h2 id="user-count">-</h2>
+                <p class="card-text">Total registered users</p>
+                <a href="/users" class="btn btn-light">Manage Users</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card bg-success text-white">
+            <div class="card-body">
+                <h5 class="card-title">
+                    <i class="bi bi-collection"></i> Teams
+                </h5>
+                <h2 id="team-count">-</h2>
+                <p class="card-text">Total teams created</p>
+                <a href="/teams" class="btn btn-light">Manage Teams</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-info-circle"></i> API Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <p class="card-text">
+                    Welcome to the Lightweight IDP management interface. This system provides user and team management 
+                    capabilities through both web interface and REST API.
+                </p>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Quick Actions</h6>
+                        <ul class="list-unstyled">
+                            <li><a href="/users" class="text-decoration-none"><i class="bi bi-person-plus"></i> Add New User</a></li>
+                            <li><a href="/teams" class="text-decoration-none"><i class="bi bi-plus-circle"></i> Create Team</a></li>
+                            <li><a href="/docs" target="_blank" class="text-decoration-none"><i class="bi bi-book"></i> View API Documentation</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>API Endpoints</h6>
+                        <ul class="list-unstyled">
+                            <li><code class="text-muted">GET /users</code> - List all users</li>
+                            <li><code class="text-muted">POST /users</code> - Create user</li>
+                            <li><code class="text-muted">GET /teams</code> - List all teams</li>
+                            <li><code class="text-muted">POST /teams</code> - Create team</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Load dashboard statistics
+async function loadDashboardStats() {
+    try {
+        // Load user count
+        const usersResponse = await fetch('/api/users/');
+        if (usersResponse.ok) {
+            const users = await usersResponse.json();
+            document.getElementById('user-count').textContent = users.length;
+        }
+
+        // Load team count
+        const teamsResponse = await fetch('/api/teams/');
+        if (teamsResponse.ok) {
+            const teams = await teamsResponse.json();
+            document.getElementById('team-count').textContent = teams.length;
+        }
+    } catch (error) {
+        console.error('Error loading dashboard stats:', error);
+    }
+}
+
+// Load stats when page loads
+document.addEventListener('DOMContentLoaded', loadDashboardStats);
+</script>
+{% endblock %} 

@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+
+{% block title %}Teams - Lightweight IDP{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="bi bi-collection"></i> Teams Management</h1>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#teamModal" onclick="openTeamModal()">
+                <i class="bi bi-plus-circle"></i> Add Team
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Members</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="teams-table">
+                            <tr>
+                                <td colspan="5" class="text-center">
+                                    <div class="spinner-border" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Team Modal -->
+<div class="modal fade" id="teamModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="teamModalTitle">Add Team</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="teamForm">
+                    <div class="mb-3">
+                        <label for="teamName" class="form-label">Team Name *</label>
+                        <input type="text" class="form-control" id="teamName" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teamDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="teamDescription" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="teamEmails" class="form-label">Member Emails (comma-separated)</label>
+                        <input type="text" class="form-control" id="teamEmails" placeholder="user1@example.com, user2@example.com">
+                        <div class="form-text">Add email addresses of team members</div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveTeam()">Save Team</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete this team?</p>
+                <p><strong id="deleteTeamName"></strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-danger" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+let currentTeamId = null;
+let teamToDelete = null;
+
+// Load all teams
+async function loadTeams() {
+    try {
+        const response = await fetch('/api/teams/');
+        if (response.ok) {
+            const teams = await response.json();
+            displayTeams(teams);
+        } else {
+            showToast('Error loading teams', 'error');
+        }
+    } catch (error) {
+        console.error('Error loading teams:', error);
+        showToast('Error loading teams', 'error');
+    }
+}
+
+// Display teams in table
+function displayTeams(teams) {
+    const tbody = document.getElementById('teams-table');
+    
+    if (teams.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No teams found</td></tr>';
+        return;
+    }
+    
+    tbody.innerHTML = teams.map(team => `
+        <tr>
+            <td><strong>${team.name}</strong></td>
+            <td>${team.description || '<em class="text-muted">No description</em>'}</td>
+            <td>
+                <div class="d-flex flex-wrap gap-1">
+                    ${team.user_emails.map(email => `
+                        <span class="badge bg-success" title="${email}">${email}</span>
+                    `).join('')}
+                    ${team.user_emails.length === 0 ? '<em class="text-muted">No members</em>' : ''}
+                </div>
+            </td>
+            <td>${new Date(team.created_at).toLocaleDateString()}</td>
+            <td>
+                <button class="btn btn-sm btn-outline-primary me-1" onclick="editTeam(${team.id})">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-sm btn-outline-danger" onclick="deleteTeam(${team.id}, '${team.name}')">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+        </tr>
+    `).join('');
+}
+
+// Open team modal for add/edit
+function openTeamModal(teamId = null) {
+    currentTeamId = teamId;
+    const modal = document.getElementById('teamModal');
+    const title = document.getElementById('teamModalTitle');
+    
+    if (teamId) {
+        title.textContent = 'Edit Team';
+        loadTeamData(teamId);
+    } else {
+        title.textContent = 'Add Team';
+        document.getElementById('teamForm').reset();
+    }
+}
+
+// Load team data for editing
+async function loadTeamData(teamId) {
+    try {
+        const response = await fetch(`/api/teams/${teamId}`);
+        if (response.ok) {
+            const team = await response.json();
+            document.getElementById('teamName').value = team.name;
+            document.getElementById('teamDescription').value = team.description || '';
+            document.getElementById('teamEmails').value = team.user_emails.join(', ');
+        }
+    } catch (error) {
+        console.error('Error loading team data:', error);
+        showToast('Error loading team data', 'error');
+    }
+}
+
+// Save team (create or update)
+async function saveTeam() {
+    const name = document.getElementById('teamName').value.trim();
+    const description = document.getElementById('teamDescription').value.trim();
+    const user_emails = document.getElementById('teamEmails').value
+        .split(',')
+        .map(email => email.trim())
+        .filter(email => email);
+
+    if (!name) {
+        showToast('Team name is required', 'error');
+        return;
+    }
+
+    const teamData = { name, description, user_emails };
+
+    try {
+        let response;
+        if (currentTeamId) {
+            // Update existing team
+            response = await fetch(`/api/teams/${currentTeamId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(teamData)
+            });
+        } else {
+            // Create new team
+            response = await fetch('/api/teams/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(teamData)
+            });
+        }
+
+        if (response.ok) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('teamModal'));
+            modal.hide();
+            showToast(`Team ${currentTeamId ? 'updated' : 'created'} successfully`, 'success');
+            loadTeams();
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Error saving team', 'error');
+        }
+    } catch (error) {
+        console.error('Error saving team:', error);
+        showToast('Error saving team', 'error');
+    }
+}
+
+// Edit team
+function editTeam(teamId) {
+    openTeamModal(teamId);
+    const modal = new bootstrap.Modal(document.getElementById('teamModal'));
+    modal.show();
+}
+
+// Delete team
+function deleteTeam(teamId, teamName) {
+    teamToDelete = teamId;
+    document.getElementById('deleteTeamName').textContent = teamName;
+    const modal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    modal.show();
+}
+
+// Confirm delete
+async function confirmDelete() {
+    if (!teamToDelete) return;
+
+    try {
+        const response = await fetch(`/api/teams/${teamToDelete}`, {
+            method: 'DELETE'
+        });
+
+        if (response.ok) {
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteModal'));
+            modal.hide();
+            showToast('Team deleted successfully', 'success');
+            loadTeams();
+        } else {
+            const error = await response.json();
+            showToast(error.detail || 'Error deleting team', 'error');
+        }
+    } catch (error) {
+        console.error('Error deleting team:', error);
+        showToast('Error deleting team', 'error');
+    }
+}
+
+// Load teams when page loads
+document.addEventListener('DOMContentLoaded', loadTeams);
+</script>
+{% endblock %} 

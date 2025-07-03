@@ -4,12 +4,16 @@ A lightweight identity provider service built with FastAPI, SQLAlchemy, and Post
 
 ## Features
 
-- FastAPI web framework with automatic API documentation
-- SQLAlchemy ORM with PostgreSQL support
-- Alembic database migrations
-- User model with email, name, roles, and teams
-- Email uniqueness enforcement at database level
-- Health check endpoint
+- **Web UI**: Modern, responsive web interface for managing users and teams
+- **REST API**: Complete FastAPI-based REST API with automatic documentation
+- **User Management**: Complete CRUD operations for users with email-based identification
+- **Team Management**: Complete CRUD operations for teams with member management
+- **Database**: SQLAlchemy ORM with PostgreSQL support and Alembic migrations
+- **Email Normalization**: Case-insensitive email handling with automatic lowercase conversion
+- **JSON Storage**: Flexible role and team assignments using JSON arrays
+- **Real-time UI**: Interactive web interface with notifications and validation
+- **API Documentation**: Auto-generated Swagger/OpenAPI documentation
+- **Error Handling**: Comprehensive error responses and user feedback
 
 ## Setup
 
@@ -63,9 +67,10 @@ Or using uvicorn directly:
 uvicorn main:app --reload
 ```
 
-The API will be available at:
-- Main application: http://localhost:8000
+The application will be available at:
+- Web UI: http://localhost:8000
 - API documentation: http://localhost:8000/docs
+- API info: http://localhost:8000/api
 - Health check: http://localhost:8000/health
 
 ## Project Structure
@@ -73,18 +78,43 @@ The API will be available at:
 ```
 lightweight-idp/
 ├── app/
+│   ├── api/
+│   │   ├── __init__.py
+│   │   ├── users.py           # User API endpoints
+│   │   ├── teams.py           # Team API endpoints
+│   │   └── ui.py              # Web UI routes
+│   ├── crud/
+│   │   ├── __init__.py
+│   │   ├── user.py            # User CRUD operations
+│   │   └── team.py            # Team CRUD operations
 │   ├── database/
 │   │   ├── __init__.py
 │   │   └── config.py          # Database configuration
 │   ├── models/
 │   │   ├── __init__.py
-│   │   └── user.py            # User model
+│   │   ├── user.py            # User model
+│   │   └── team.py            # Team model
+│   ├── schemas/
+│   │   ├── __init__.py
+│   │   ├── user.py            # User Pydantic schemas
+│   │   └── team.py            # Team Pydantic schemas
 │   └── __init__.py
+├── templates/
+│   ├── base.html              # Base template with navigation
+│   ├── dashboard.html         # Dashboard page
+│   ├── users.html             # User management page
+│   └── teams.html             # Team management page
+├── static/
+│   ├── css/
+│   │   └── custom.css         # Custom styles
+│   └── js/
+│       └── api.js             # JavaScript utilities
 ├── alembic/
 │   ├── versions/              # Migration files
 │   ├── env.py                 # Alembic environment
 │   └── ...
 ├── main.py                    # FastAPI application entry point
+├── demo_api.py               # API testing script
 ├── requirements.txt           # Python dependencies
 ├── alembic.ini               # Alembic configuration
 ├── config.env.template       # Environment variables template
@@ -123,6 +153,40 @@ Key environment variables (see `config.env.template`):
 - `DATABASE_URL`: PostgreSQL connection string
 - `DEBUG`: Enable debug mode
 - `SECRET_KEY`: Secret key for the application
+
+## Web UI
+
+The application includes a modern, responsive web interface built with Bootstrap 5 for managing users and teams.
+
+### UI Features
+- **Dashboard**: Overview page with user and team statistics
+- **User Management**: Complete CRUD interface for users with modal forms
+- **Team Management**: Complete CRUD interface for teams with member management
+- **Real-time Notifications**: Toast notifications for all operations
+- **Responsive Design**: Mobile-friendly interface with Bootstrap 5
+- **Modern UX**: Clean, professional design with icons and animations
+
+### Navigation
+- **Dashboard** (`/`): Overview and statistics
+- **Users** (`/users`): User management interface
+- **Teams** (`/teams`): Team management interface
+- **API Docs** (`/docs`): Auto-generated API documentation
+
+### User Management UI
+- View all users in a searchable table
+- Create new users with email, name, roles, and teams
+- Edit existing users (email is read-only after creation)
+- Delete users with confirmation
+- Real-time validation and error handling
+- Role and team badges for easy visualization
+
+### Team Management UI
+- View all teams with member lists
+- Create new teams with name, description, and members
+- Edit team details and member lists
+- Delete teams with confirmation
+- Member email badges with tooltips
+- Responsive design for all screen sizes
 
 ## API Endpoints
 

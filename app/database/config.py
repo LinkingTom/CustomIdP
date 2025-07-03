@@ -7,10 +7,10 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Database URL from environment variable or default to local PostgreSQL
+# Database URL from environment variable or default to local SQLite for development
 DATABASE_URL = os.getenv(
     "DATABASE_URL",
-    "postgresql://postgres:password@localhost:5432/lightweight_idp"
+    "sqlite:///./lightweight_idp.db"
 )
 
 # Create engine
